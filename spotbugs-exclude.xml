@@ -1,0 +1,10 @@
+<FindBugsFilter>
+  <!-- Informational inventory of HTTP endpoints, not a vulnerability. -->
+  <Match><Class name="ru.itmo.secure.ApiController"/><Bug pattern="SPRING_ENDPOINT"/></Match>
+  <!-- Stateless API accepts only Authorization: Bearer, never cookies or Basic auth.
+       Integration tests verify that no session is issued and Basic auth is rejected. -->
+  <Match><Class name="ru.itmo.secure.SecurityConfig"/><Bug pattern="SPRING_CSRF_PROTECTION_DISABLED"/></Match>
+  <!-- Spring-owned JdbcTemplate is an injected infrastructure singleton; defensive
+       copying would create a different, unconfigured JDBC client. Never exposed. -->
+  <Match><Class name="ru.itmo.secure.Users"/><Method name="&lt;init&gt;"/><Bug pattern="EI_EXPOSE_REP2"/></Match>
+</FindBugsFilter>

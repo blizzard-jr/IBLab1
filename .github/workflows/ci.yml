@@ -1,0 +1,71 @@
+name: Secure API CI
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  tests-and-sast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: secure_api
+          POSTGRES_USER: secure_api
+          POSTGRES_PASSWORD: ci-only-password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U secure_api -d secure_api"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DB_URL: jdbc:postgresql://localhost:5432/secure_api
+      DB_USERNAME: secure_api
+      DB_PASSWORD: ci-only-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Generate ephemeral signing key
+        run: echo "JWT_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+      - name: Integration tests on PostgreSQL
+        run: mvn -B -ntp verify
+      - name: SpotBugs and FindSecBugs
+        if: ${{ !cancelled() }}
+        run: mvn -B -ntp spotbugs:check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tests-and-sast
+          path: |
+            target/surefire-reports/
+            target/spotbugs*
+  sca:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Check NVD configuration
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+          if [ -z "$NVD_API_KEY" ]; then
+            echo "::error::Add NVD_API_KEY in repository Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+      - name: OWASP Dependency-Check
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: mvn -B -ntp -Psca dependency-check:check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sca
+          path: target/dependency-check-report.*
