@@ -24,6 +24,8 @@
       <configuration><failBuildOnCVSS>7</failBuildOnCVSS><failOnError>true</failOnError>
         <!-- NVD remains enabled. Optional authenticated Sonatype source is not used. -->
         <ossIndexAnalyzerEnabled>false</ossIndexAnalyzerEnabled>
+        <!-- Keep the large NVD database outside ~/.m2 so CI can cache it separately. -->
+        <dataDirectory>${user.home}/.cache/dependency-check</dataDirectory>
         <formats><format>HTML</format><format>JSON</format></formats>
         <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
       </configuration>

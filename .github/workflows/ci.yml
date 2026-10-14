@@ -44,7 +44,9 @@ jobs:
             target/spotbugs*
   sca:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # A cold NVD import contains more than 400,000 CVE records. The larger
+    # timeout is only needed when no reusable Dependency-Check cache exists.
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -52,6 +54,18 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - name: Select weekly Dependency-Check cache
+        id: dependency-check-cache-key
+        shell: bash
+        run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+      - name: Restore Dependency-Check vulnerability database
+        id: dependency-check-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/dependency-check
+          key: ${{ runner.os }}-dependency-check-${{ steps.dependency-check-cache-key.outputs.week }}
+          restore-keys: |
+            ${{ runner.os }}-dependency-check-
       - name: Check NVD configuration
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
@@ -64,6 +78,12 @@ jobs:
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: mvn -B -ntp -Psca dependency-check:check
+      - name: Save Dependency-Check vulnerability database
+        if: ${{ always() && steps.dependency-check-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/dependency-check
+          key: ${{ steps.dependency-check-cache.outputs.cache-primary-key }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
