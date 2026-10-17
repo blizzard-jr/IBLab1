@@ -47,7 +47,7 @@ public class SecurityConfig {
     @Bean
     PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(12); }
     @Bean
-    SecurityFilterChain security(HttpSecurity http) throws Exception {
+    SecurityFilterChain security(HttpSecurity http) {
         // Only explicit Authorization Bearer headers are accepted; no cookie authentication.
         http.csrf(csrf -> csrf.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -64,6 +64,10 @@ public class SecurityConfig {
                 res.setHeader("WWW-Authenticate", "Bearer");
                 res.getWriter().write("{\"error\":\"unauthorized\"}");
             }));
-        return http.build();
+        try {
+            return http.build();
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to build the Spring Security filter chain", exception);
+        }
     }
 }
