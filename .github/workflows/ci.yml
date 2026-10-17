@@ -42,6 +42,7 @@ jobs:
           path: |
             target/surefire-reports/
             target/spotbugs*
+            target/site/spotbugs.html
   sca:
     runs-on: ubuntu-latest
     # A cold NVD import contains more than 400,000 CVE records. The larger
