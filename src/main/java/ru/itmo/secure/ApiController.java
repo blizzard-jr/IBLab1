@@ -53,5 +53,6 @@ public class ApiController {
         if (page < 0 || page > 100000 || size < 1 || size > 100)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         return users.list(page, size);
+
     }
 }
