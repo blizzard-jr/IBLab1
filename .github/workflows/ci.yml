@@ -7,15 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
           cache: maven
       - name: SpotBugs and FindSecBugs
         run: mvn -B -ntp compile spotbugs:check
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sast
@@ -28,8 +28,8 @@ jobs:
     # timeout is only needed when no reusable Dependency-Check cache exists.
     timeout-minutes: 240
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -40,7 +40,7 @@ jobs:
         run: echo "week=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
       - name: Restore Dependency-Check vulnerability database
         id: dependency-check-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ~/.cache/dependency-check
           key: ${{ runner.os }}-dependency-check-${{ steps.dependency-check-cache-key.outputs.week }}
@@ -60,11 +60,11 @@ jobs:
         run: mvn -B -ntp -Psca dependency-check:check
       - name: Save Dependency-Check vulnerability database
         if: ${{ always() && steps.dependency-check-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ~/.cache/dependency-check
           key: ${{ steps.dependency-check-cache.outputs.cache-primary-key }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: sca
